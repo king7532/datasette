@@ -67,6 +67,7 @@ from .utils import (
     StartupError,
     async_call_with_supported_arguments,
     await_me_maybe,
+    baseconv,
     call_with_supported_arguments,
     detect_json1,
     display_actor,
@@ -232,6 +233,13 @@ ResolvedTable = collections.namedtuple("ResolvedTable", ("db", "table", "is_view
 ResolvedRow = collections.namedtuple(
     "ResolvedRow", ("db", "table", "sql", "params", "pks", "pk_values", "row")
 )
+
+
+def _to_string(value):
+    if isinstance(value, str):
+        return value
+    else:
+        return json.dumps(value, default=str)
 
 
 class Datasette:
@@ -451,23 +459,23 @@ class Datasette:
             if key == "databases":
                 continue
             value = self._metadata_local[key]
-            if not isinstance(value, str):
-                value = json.dumps(value)
-            await self.set_instance_metadata(key, value)
+            await self.set_instance_metadata(key, _to_string(value))
 
         # step 2: database-level metadata
         for dbname, db in self._metadata_local.get("databases", {}).items():
             for key, value in db.items():
                 if key in ("tables", "queries"):
                     continue
-                await self.set_database_metadata(dbname, key, value)
+                await self.set_database_metadata(dbname, key, _to_string(value))
 
             # step 3: table-level metadata
             for tablename, table in db.get("tables", {}).items():
                 for key, value in table.items():
                     if key == "columns":
                         continue
-                    await self.set_resource_metadata(dbname, tablename, key, value)
+                    await self.set_resource_metadata(
+                        dbname, tablename, key, _to_string(value)
+                    )
 
                 # step 4: column-level metadata (only descriptions in metadata.json)
                 for columnname, column_description in table.get("columns", {}).items():
@@ -1422,6 +1430,18 @@ class Datasette:
             )
 
         return await template.render_async(template_context)
+
+    def set_actor_cookie(
+        self, response: Response, actor: dict, expire_after: Optional[int] = None
+    ):
+        data = {"a": actor}
+        if expire_after:
+            expires_at = int(time.time()) + (24 * 60 * 60)
+            data["e"] = baseconv.base62.encode(expires_at)
+        response.set_cookie("ds_actor", self.sign(data, "actor"))
+
+    def delete_actor_cookie(self, response: Response):
+        response.set_cookie("ds_actor", "", expires=0, max_age=0)
 
     async def _asset_urls(self, key, template, context, request, view_name):
         # Flatten list-of-lists from plugins:

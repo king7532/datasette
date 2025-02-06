@@ -113,7 +113,7 @@ async def test_hook_plugin_prepare_connection_arguments(ds_client):
 async def test_hook_extra_css_urls(ds_client, path, expected_decoded_object):
     response = await ds_client.get(path)
     assert response.status_code == 200
-    links = Soup(response.text, "html.parser").findAll("link")
+    links = Soup(response.text, "html.parser").find_all("link")
     special_href = [
         link
         for link in links
@@ -128,7 +128,7 @@ async def test_hook_extra_css_urls(ds_client, path, expected_decoded_object):
 @pytest.mark.asyncio
 async def test_hook_extra_js_urls(ds_client):
     response = await ds_client.get("/")
-    scripts = Soup(response.text, "html.parser").findAll("script")
+    scripts = Soup(response.text, "html.parser").find_all("script")
     script_attrs = [s.attrs for s in scripts]
     for attrs in [
         {
@@ -153,7 +153,7 @@ async def test_plugins_with_duplicate_js_urls(ds_client):
     # What matters is that https://plugin-example.datasette.io/jquery.js is only there once
     # and it comes before plugin1.js and plugin2.js which could be in either
     # order
-    scripts = Soup(response.text, "html.parser").findAll("script")
+    scripts = Soup(response.text, "html.parser").find_all("script")
     srcs = [s["src"] for s in scripts if s.get("src")]
     # No duplicates allowed:
     assert len(srcs) == len(set(srcs))
@@ -194,7 +194,7 @@ async def test_hook_render_cell_demo(ds_client):
     soup = Soup(response.text, "html.parser")
     td = soup.find("td", {"class": "col-content"})
     assert json.loads(td.string) == {
-        "row": {"id": "4", "content": "RENDER_CELL_DEMO"},
+        "row": {"id": 4, "content": "RENDER_CELL_DEMO"},
         "column": "content",
         "table": "simple_primary_key",
         "database": "fixtures",
@@ -541,7 +541,7 @@ async def test_hook_register_output_renderer_can_render(ds_client):
     links = (
         Soup(response.text, "html.parser")
         .find("p", {"class": "export-links"})
-        .findAll("a")
+        .find_all("a")
     )
     actual = [link["href"] for link in links]
     # Should not be present because we sent ?_no_can_render=1
@@ -857,6 +857,9 @@ def test_hook_register_magic_parameters(restore_working_directory):
                         "get_uuid": {
                             "sql": "select :_uuid_new",
                         },
+                        "asyncrequest": {
+                            "sql": "select :_asyncrequest_key",
+                        },
                     }
                 }
             }
@@ -871,6 +874,10 @@ def test_hook_register_magic_parameters(restore_working_directory):
         assert 200 == response_get.status
         new_uuid = response_get.json[0][":_uuid_new"]
         assert 4 == new_uuid.count("-")
+        # And test the async one
+        response_async = client.get("/data/asyncrequest.json?_shape=array")
+        assert 200 == response_async.status
+        assert response_async.json[0][":_asyncrequest_key"] == "key"
 
 
 def test_hook_forbidden(restore_working_directory):

@@ -85,7 +85,7 @@ class AuthTokenView(BaseView):
             self.ds._root_token = None
             response = Response.redirect(self.ds.urls.instance())
             root_actor = {"id": "root"}
-            response.set_cookie("ds_actor", self.ds.sign({"a": root_actor}, "actor"))
+            self.ds.set_actor_cookie(response, root_actor)
             await self.ds.track_event(LoginEvent(actor=root_actor))
             return response
         else:
@@ -107,7 +107,7 @@ class LogoutView(BaseView):
 
     async def post(self, request):
         response = Response.redirect(self.ds.urls.instance())
-        response.set_cookie("ds_actor", "", expires=0, max_age=0)
+        self.ds.delete_actor_cookie(response)
         self.ds.add_message(request, "You are now logged out", self.ds.WARNING)
         await self.ds.track_event(LogoutEvent(actor=request.actor))
         return response
@@ -121,12 +121,27 @@ class PermissionsDebugView(BaseView):
         await self.ds.ensure_permissions(request.actor, ["view-instance"])
         if not await self.ds.permission_allowed(request.actor, "permissions-debug"):
             raise Forbidden("Permission denied")
+        filter_ = request.args.get("filter") or "all"
+        permission_checks = list(reversed(self.ds._permission_checks))
+        if filter_ == "exclude-yours":
+            permission_checks = [
+                check
+                for check in permission_checks
+                if (check["actor"] or {}).get("id") != request.actor["id"]
+            ]
+        elif filter_ == "only-yours":
+            permission_checks = [
+                check
+                for check in permission_checks
+                if (check["actor"] or {}).get("id") == request.actor["id"]
+            ]
         return await self.render(
             ["permissions_debug.html"],
             request,
             # list() avoids error if check is performed during template render:
             {
-                "permission_checks": list(reversed(self.ds._permission_checks)),
+                "permission_checks": permission_checks,
+                "filter": filter_,
                 "permissions": [
                     {
                         "name": p.name,

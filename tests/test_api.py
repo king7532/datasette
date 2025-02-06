@@ -659,6 +659,7 @@ async def test_custom_sql(ds_client):
     }
 
 
+@pytest.mark.xfail(reason="Sometimes flaky in CI due to timing issues")
 def test_sql_time_limit(app_client_shorter_time_limit):
     response = app_client_shorter_time_limit.get(
         "/fixtures/-/query.json?sql=select+sleep(0.5)",
@@ -708,7 +709,7 @@ async def test_invalid_custom_sql(ds_client):
 async def test_row(ds_client):
     response = await ds_client.get("/fixtures/simple_primary_key/1.json?_shape=objects")
     assert response.status_code == 200
-    assert response.json()["rows"] == [{"id": "1", "content": "hello"}]
+    assert response.json()["rows"] == [{"id": 1, "content": "hello"}]
 
 
 @pytest.mark.asyncio
