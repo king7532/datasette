@@ -57,6 +57,8 @@ arguments and can be called like this::
 
     select random_integer(1, 10);
 
+``prepare_connection()`` hooks are not called for Datasette's :ref:`internal database <internals_internal>`.
+
 Examples: `datasette-jellyfish <https://datasette.io/plugins/datasette-jellyfish>`__, `datasette-jq <https://datasette.io/plugins/datasette-jq>`__, `datasette-haversine <https://datasette.io/plugins/datasette-haversine>`__, `datasette-rure <https://datasette.io/plugins/datasette-rure>`__
 
 .. _plugin_hook_prepare_jinja2_environment:
@@ -1024,7 +1026,7 @@ actor_from_request(datasette, request)
 
 This is part of Datasette's :ref:`authentication and permissions system <authentication>`. The function should attempt to authenticate an actor (either a user or an API actor of some sort) based on information in the request.
 
-If it cannot authenticate an actor, it should return ``None``. Otherwise it should return a dictionary representing that actor.
+If it cannot authenticate an actor, it should return ``None``, otherwise it should return a dictionary representing that actor. Once a plugin has returned an actor from this hook other plugins will be ignored.
 
 Here's an example that authenticates the actor based on an incoming API key:
 
@@ -1315,7 +1317,7 @@ Magic parameters all take this format: ``_prefix_rest_of_parameter``. The prefix
 
 To register a new function, return it as a tuple of ``(string prefix, function)`` from this hook. The function you register should take two arguments: ``key`` and ``request``, where ``key`` is the ``rest_of_parameter`` portion of the parameter and ``request`` is the current :ref:`internals_request`.
 
-This example registers two new magic parameters: ``:_request_http_version`` returning the HTTP version of the current request, and ``:_uuid_new`` which returns a new UUID. It also registers an `:_asynclookup_key` parameter, demonstrating that these functions can be asynchronous:
+This example registers two new magic parameters: ``:_request_http_version`` returning the HTTP version of the current request, and ``:_uuid_new`` which returns a new UUID. It also registers an ``:_asynclookup_key`` parameter, demonstrating that these functions can be asynchronous:
 
 .. code-block:: python
 

@@ -721,3 +721,53 @@ async def test_hidden_tables(app_client):
         "r_parent",
         "r_rowid",
     ]
+
+    # A fts virtual table with a content table should be hidden too
+    await db.execute("create virtual table f2_fts using fts5(a, content='f')")
+    assert await db.hidden_table_names() == [
+        "_hideme",
+        "f2_fts_config",
+        "f2_fts_data",
+        "f2_fts_docsize",
+        "f2_fts_idx",
+        "f_config",
+        "f_content",
+        "f_data",
+        "f_docsize",
+        "f_idx",
+        "r_node",
+        "r_parent",
+        "r_rowid",
+        "f2_fts",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_replace_database(tmpdir):
+    path1 = str(tmpdir / "data1.db")
+    (tmpdir / "two").mkdir()
+    path2 = str(tmpdir / "two" / "data1.db")
+    sqlite3.connect(path1).executescript(
+        """
+        create table t (id integer primary key);
+        insert into t (id) values (1);
+        insert into t (id) values (2);
+    """
+    )
+    sqlite3.connect(path2).executescript(
+        """
+        create table t (id integer primary key);
+        insert into t (id) values (1);
+    """
+    )
+    datasette = Datasette([path1])
+    db = datasette.get_database("data1")
+    count = (await db.execute("select count(*) from t")).first()[0]
+    assert count == 2
+    # Now replace that database
+    datasette.get_database("data1").close()
+    datasette.remove_database("data1")
+    datasette.add_database(Database(datasette, path2), "data1")
+    db2 = datasette.get_database("data1")
+    count = (await db2.execute("select count(*) from t")).first()[0]
+    assert count == 1

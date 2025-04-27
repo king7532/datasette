@@ -4,6 +4,43 @@
 Changelog
 =========
 
+.. _v1_0_a19:
+
+1.0a19 (2025-04-21)
+-------------------
+
+- Tiny cosmetic bug fix for mobile display of table rows. (:issue:`2479`)
+
+.. _v1_0_a18:
+
+1.0a18 (2025-04-16)
+-------------------
+
+- Fix for incorrect foreign key references in the internal database schema. (:issue:`2466`)
+- The ``prepare_connection()`` hook no longer runs for the internal database. (:issue:`2468`)
+- Fixed bug where ``link:`` HTTP headers used invalid syntax. (:issue:`2470`)
+- No longer tested against Python 3.8. Now tests against Python 3.13.
+- FTS tables are now hidden by default if they correspond to a content table. (:issue:`2477`)
+- Fixed bug with foreign key links to rows in databases with filenames containing a special character. Thanks, `Jack Stratton <https://github.com/phroa>`__. (`#2476 <https://github.com/simonw/datasette/pull/2476>`__)
+
+.. _v1_0_a17:
+
+1.0a17 (2025-02-06)
+-------------------
+
+- ``DATASETTE_SSL_KEYFILE`` and ``DATASETTE_SSL_CERTFILE`` environment variables as alternatives to ``--ssl-keyfile`` and ``--ssl-certfile``. Thanks, Alex Garcia. (:issue:`2422`)
+- ``SQLITE_EXTENSIONS`` environment variable has been renamed to ``DATASETTE_LOAD_EXTENSION``. (:issue:`2424`)
+- ``datasette serve`` environment variables are now :ref:`documented here <cli_datasette_serve_env>`.
+- The :ref:`plugin_hook_register_magic_parameters` plugin hook can now register async functions. (:issue:`2441`)
+- Datasette is now tested against Python 3.13.
+- Breadcrumbs on database and table pages now include a consistent self-link for resetting query string parameters. (:issue:`2454`)
+- Fixed issue where Datasette could crash on ``metadata.json`` with nested values. (:issue:`2455`)
+- New internal methods ``datasette.set_actor_cookie()`` and ``datasette.delete_actor_cookie()``, :ref:`described here <authentication_ds_actor>`. (:issue:`1690`)
+- ``/-/permissions`` page now shows a list of all permissions registered by plugins. (:issue:`1943`)
+- If a table has a single unique text column Datasette now detects that as the foreign key label for that table. (:issue:`2458`)
+- The ``/-/permissions`` page now includes options for filtering or exclude permission checks recorded against the current user. (:issue:`2460`)
+- Fixed a bug where replacing a database with a new one with the same name did not pick up the new database correctly. (:issue:`2465`)
+
 .. _v0_65_1:
 
 0.65.1 (2024-11-28)
